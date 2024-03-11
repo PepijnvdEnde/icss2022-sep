@@ -31,7 +31,7 @@ CAPITAL_IDENT: [A-Z] [A-Za-z0-9_]*;
 //All whitespace is skipped
 WS: [ \t\r\n]+ -> skip;
 
-//
+//Operators
 OPEN_BRACE: '{';
 CLOSE_BRACE: '}';
 SEMICOLON: ';';
@@ -44,6 +44,20 @@ ASSIGNMENT_OPERATOR: ':=';
 
 
 
-//--- PARSER: ---
-stylesheet: EOF;
+//--- PARSER: ---//
+stylesheet: stijlRegel* EOF;
+stijlRegel: selector OPEN_BRACE (LOWER_IDENT COLON expressie SEMICOLON)* CLOSE_BRACE;
+selector: LOWER_IDENT
+        | CLASS_IDENT
+        | ID_IDENT;
+expressie: (COLOR | PIXELSIZE)
+        | expressie MUL expressie
+        | expressie PLUS | MIN expressie;
+
+
+
+
+
+
+
 
