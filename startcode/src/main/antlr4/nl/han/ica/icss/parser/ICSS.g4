@@ -10,8 +10,8 @@ BOX_BRACKET_CLOSE: ']';
 
 
 //Literals
-TRUE: 'TRUE';
-FALSE: 'FALSE';
+TRUE: 'TRUE' | 'true' | 'True';
+FALSE: 'FALSE' | 'false' | 'False';
 PIXELSIZE: [0-9]+ 'px';
 PERCENTAGE: [0-9]+ '%';
 SCALAR: [0-9]+;
@@ -19,6 +19,7 @@ SCALAR: [0-9]+;
 
 //Color value takes precedence over id idents
 COLOR: '#' [0-9a-f] [0-9a-f] [0-9a-f] [0-9a-f] [0-9a-f] [0-9a-f];
+
 
 //Specific identifiers for id's and css classes
 ID_IDENT: '#' [a-z0-9\-]+;
@@ -44,15 +45,25 @@ ASSIGNMENT_OPERATOR: ':=';
 
 
 
-//--- PARSER: ---//
-stylesheet: stijlRegel* EOF;
-stijlRegel: selector OPEN_BRACE (LOWER_IDENT COLON expressie SEMICOLON)* CLOSE_BRACE;
+//--- PARSER ---//
+stylesheet: (variabeleToewijzing | stijlRegel)* EOF;
+stijlRegel: selector OPEN_BRACE (declaratie | variabeleToewijzing)* CLOSE_BRACE;
+variabeleToewijzing: CAPITAL_IDENT ASSIGNMENT_OPERATOR expressie+ SEMICOLON;
 selector: LOWER_IDENT
         | CLASS_IDENT
         | ID_IDENT;
-expressie: (COLOR | PIXELSIZE)
+declaratie: LOWER_IDENT COLON expressie SEMICOLON;
+expressie: literal
         | expressie MUL expressie
-        | expressie PLUS | MIN expressie;
+        |expressie PLUS | MIN expressie;
+literal: TRUE
+        | FALSE
+        | COLOR
+        | PIXELSIZE
+        | CAPITAL_IDENT;
+
+
+
 
 
 
