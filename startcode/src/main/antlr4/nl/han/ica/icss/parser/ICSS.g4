@@ -8,10 +8,9 @@ ELSE: 'else';
 BOX_BRACKET_OPEN: '[';
 BOX_BRACKET_CLOSE: ']';
 
-
 //Literals
-TRUE: 'TRUE' | 'true' | 'True';
-FALSE: 'FALSE' | 'false' | 'False';
+TRUE: 'TRUE';
+FALSE: 'FALSE';
 PIXELSIZE: [0-9]+ 'px';
 PERCENTAGE: [0-9]+ '%';
 SCALAR: [0-9]+;
@@ -19,7 +18,6 @@ SCALAR: [0-9]+;
 
 //Color value takes precedence over id idents
 COLOR: '#' [0-9a-f] [0-9a-f] [0-9a-f] [0-9a-f] [0-9a-f] [0-9a-f];
-
 
 //Specific identifiers for id's and css classes
 ID_IDENT: '#' [a-z0-9\-]+;
@@ -43,31 +41,29 @@ MUL: '*';
 ASSIGNMENT_OPERATOR: ':=';
 
 
-
-
 //--- PARSER ---//
 stylesheet: (variabeleToewijzing | stijlRegel)* EOF;
-stijlRegel: selector OPEN_BRACE (declaratie | variabeleToewijzing)* CLOSE_BRACE;
-variabeleToewijzing: CAPITAL_IDENT ASSIGNMENT_OPERATOR expressie+ SEMICOLON;
-selector: LOWER_IDENT
-        | CLASS_IDENT
-        | ID_IDENT;
-declaratie: LOWER_IDENT COLON expressie SEMICOLON;
-expressie: literal
-        | expressie MUL expressie
-        |expressie PLUS | MIN expressie;
-literal: TRUE
-        | FALSE
-        | COLOR
-        | PIXELSIZE
-        | CAPITAL_IDENT;
+stijlRegel: selector OPEN_BRACE regelInhoud CLOSE_BRACE;
+variabeleToewijzing: variabeleReferentie ASSIGNMENT_OPERATOR expressie+ SEMICOLON;
+regelInhoud: (declaratie | ifClause | variabeleToewijzing)*;
+selector: LOWER_IDENT   #tagSelector
+        | CLASS_IDENT   #classSelector
+        | ID_IDENT      #idSelector;
+declaratie: eigenschapNaam COLON expressie SEMICOLON;
+expressie: literal                         #literalExpressie
+        | expressie MUL expressie          #mulExpressie
+        | expressie (PLUS | MIN) expressie #plusMinExpressie;
+ifClause: IF BOX_BRACKET_OPEN (variabeleReferentie | (TRUE | FALSE)) BOX_BRACKET_CLOSE OPEN_BRACE regelInhoud CLOSE_BRACE elseClause?;
+elseClause: ELSE OPEN_BRACE regelInhoud CLOSE_BRACE;
+literal: (TRUE | FALSE)         #boolLiteral
+        | COLOR                 #kleurLiteral
+        | PIXELSIZE             #pixelLiteral
+        | SCALAR                #scalarLiteral
+        | PERCENTAGE            #percentageLiteral
+        | variabeleReferentie   #variabeleLiteral;
 
-
-
-
-
-
-
+variabeleReferentie: CAPITAL_IDENT;
+eigenschapNaam: LOWER_IDENT;
 
 
 
