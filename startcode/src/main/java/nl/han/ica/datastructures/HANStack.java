@@ -15,7 +15,7 @@ public class HANStack<T> implements IHANStack<T> {
 
     @Override
     public T pop() {
-        if (list.size() == 0) {
+        if (list.isEmpty()) {
             throw new EmptyStackException();
         }
         return list.remove(list.size() - 1);
@@ -24,7 +24,7 @@ public class HANStack<T> implements IHANStack<T> {
 
     @Override
     public T peek() {
-        if (list.size() == 0) {
+        if (list.isEmpty()) {
             throw new EmptyStackException();
         }
         return list.get(list.size() - 1);
