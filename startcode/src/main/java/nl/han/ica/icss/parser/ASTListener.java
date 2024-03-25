@@ -71,6 +71,18 @@ public class ASTListener extends ICSSBaseListener {
     }
 
     @Override
+    public void enterIdSelector(ICSSParser.IdSelectorContext ctx) {
+        Selector selector = new IdSelector(ctx.getText());
+        currentContainer.push(selector);
+    }
+
+    @Override
+    public void exitIdSelector(ICSSParser.IdSelectorContext ctx) {
+        Selector selector = (Selector) currentContainer.pop();
+        currentContainer.peek().addChild(selector);
+    }
+
+    @Override
     public void enterEigenschapNaam(ICSSParser.EigenschapNaamContext ctx) {
         PropertyName propertyName = new PropertyName(ctx.getText());
         currentContainer.push(propertyName);
@@ -181,9 +193,11 @@ public class ASTListener extends ICSSBaseListener {
     @Override
     public void enterPlusMinExpressie(ICSSParser.PlusMinExpressieContext ctx) {
         if (ctx.getChild(1).getText().equals("+")) {
+            AddOperation addOperation = new AddOperation();
             currentContainer.push(new AddOperation());
         }
         if (ctx.getChild(1).getText().equals("-")) {
+            SubtractOperation subtractOperation = new SubtractOperation();
             currentContainer.push(new SubtractOperation());
         }
     }
@@ -196,6 +210,7 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void enterMulExpressie(ICSSParser.MulExpressieContext ctx) {
+        MultiplyOperation multiplyOperation = new MultiplyOperation();
         currentContainer.push(new MultiplyOperation());
     }
 
@@ -215,18 +230,6 @@ public class ASTListener extends ICSSBaseListener {
     public void exitVariabeleToewijzing(ICSSParser.VariabeleToewijzingContext ctx) {
         VariableAssignment variableAssignment = (VariableAssignment) currentContainer.pop();
         currentContainer.peek().addChild(variableAssignment);
-    }
-
-    @Override
-    public void enterIdSelector(ICSSParser.IdSelectorContext ctx) {
-        Selector selector = new IdSelector(ctx.getText());
-        currentContainer.push(selector);
-    }
-
-    @Override
-    public void exitIdSelector(ICSSParser.IdSelectorContext ctx) {
-        Selector selector =  (Selector) currentContainer.pop();
-        currentContainer.peek().addChild(selector);
     }
 
     @Override

@@ -4,11 +4,8 @@ import nl.han.ica.icss.ast.*;
 import nl.han.ica.icss.ast.literals.*;
 import nl.han.ica.icss.ast.operations.AddOperation;
 import nl.han.ica.icss.ast.operations.MultiplyOperation;
-import nl.han.ica.icss.ast.selectors.ClassSelector;
-import nl.han.ica.icss.ast.selectors.IdSelector;
-import nl.han.ica.icss.ast.selectors.TagSelector;
+import nl.han.ica.icss.ast.operations.SubtractOperation;
 import nl.han.ica.icss.ast.types.ExpressionType;
-import nl.han.ica.icss.parser.ICSSParser;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -16,14 +13,11 @@ import java.util.LinkedList;
 
 public class Checker {
 
-    //This is a linked list of hashmaps, each hashmap contains the variable name and its type
-    private String width;
     private LinkedList<HashMap<String, ExpressionType>> variableTypes;
 
     public void check(AST ast) {
         variableTypes = new LinkedList<>();
-        System.out.println("Checking stylesheet");
-         checkStylesheet(ast.root);
+        checkStylesheet(ast.root);
     }
 
     private void checkStylesheet(Stylesheet stylesheet) {
@@ -41,124 +35,203 @@ public class Checker {
     }
 
     private void checkStijlRegel(Stylerule stylerule) {
-        System.out.println("styleRule: " + stylerule.body.toString());
-        for (Selector selector : stylerule.selectors) {
-            checkSelector(selector);
-        }
+        variableTypes.addFirst(new HashMap<>());
         for (ASTNode node : stylerule.body) {
-            checkRegelInhoud(node);
+            if (node instanceof Declaration) {
+                checkDeclaratie((Declaration) node);
+            } else if (node instanceof IfClause) {
+                checkIfClause((IfClause) node);
+            } else if (node instanceof VariableAssignment) {
+                checkVariabeleToewijzing((VariableAssignment) node);
+            } else {
+                node.setError("Onbekend type: geen declaratie, if-clause of variabele toewijzing");
+            }
         }
-
-    }
-
-    private void checkSelector(Selector selector) {
-        if (selector instanceof TagSelector) {
-            System.out.println("TagSelector: " + selector.toString());
-        } else if (selector instanceof ClassSelector) {
-            System.out.println("ClassSelector: " + selector.toString());
-        } else if (selector instanceof IdSelector) {
-            System.out.println("IdSelector: " + selector.toString());
-        }
-    }
-
-    private void checkRegelInhoud(ASTNode regelInhoud) {
-        System.out.println("RegelInhoud: " + regelInhoud.toString());
-        if (regelInhoud instanceof Declaration) {
-            checkDeclaratie((Declaration) regelInhoud);
-        } else if (regelInhoud instanceof IfClause) {
-            checkIfClause((IfClause) regelInhoud);
-        } else if (regelInhoud instanceof VariableAssignment) {
-            checkVariabeleToewijzing((VariableAssignment) regelInhoud);
-        }
+        variableTypes.removeFirst();
     }
 
     private void checkDeclaratie(Declaration declaration) {
-        System.out.println("Declaration: " + declaration.property.name.toString() + ":" + declaration.expression.toString());
-        if (declaration.property.name.equals("width")) {
-            if (declaration.expression instanceof PixelLiteral) {
-                System.out.println("PixelLiteral: " + declaration.expression.toString());
-            } else if (declaration.expression instanceof PercentageLiteral) {
-                System.out.println("PercentageLiteral: " + declaration.expression.toString());
+        ExpressionType expressionType = checkExpressie(declaration.expression);
+        if (expressionType != ExpressionType.UNDEFINED) {
+
+            switch (declaration.property.name) {
+                case "background-color":
+                    if (expressionType != ExpressionType.COLOR) {
+                        declaration.setError("Alleen color expressies zijn toegestaan voor background-color");
+                    }
+                    break;
+                case "width":
+                    if (expressionType != ExpressionType.PIXEL && expressionType != ExpressionType.PERCENTAGE) {
+                        declaration.setError("Alleen pixel en percentage expressies zijn toegestaan voor width");
+                    }
+                    break;
+                case "color":
+                    if (expressionType != ExpressionType.COLOR) {
+                        declaration.setError("Alleen color expressies zijn toegestaan voor color");
+                    }
+                    break;
+                case "height":
+                    if (expressionType != ExpressionType.PIXEL) {
+                        declaration.setError("Alleen pixel expressies zijn toegestaan voor height");
+                    }
+                    break;
+                default:
+                    declaration.setError("Onbekende eigenschap: " + declaration.property.name);
             }
         }
-        checkExpressie(declaration.expression);
     }
 
-    private void checkExpressie(Expression expression) {
-        //check if at least
-        System.out.println("Expression: " + expression.toString());
-        if (expression instanceof Literal) {
-            checkLiteral((Literal) expression);
-        } else if (expression instanceof AddOperation) {
-            checkAddOperation((AddOperation) expression);
-        } else if (expression instanceof MultiplyOperation) {
-            checkMultiplyOperation((MultiplyOperation) expression);
+    private ExpressionType checkExpressie(Expression expression) {
+        if (expression instanceof VariableReference) {
+            return checkVariableReference((VariableReference) expression);
+        } else if (expression instanceof Operation) {
+            return checkOperationType((Operation) expression);
+        } else if (expression instanceof Literal) {
+            return checkLiteral((Literal) expression);
         }
+        expression.setError("Onbekende expressie: " + expression.getClass().getSimpleName());
+        return ExpressionType.UNDEFINED;
     }
 
-    private void checkLiteral(Literal literal) {
+    private ExpressionType checkLiteral(Literal literal) {
         if (literal instanceof BoolLiteral) {
-            System.out.println("BoolLiteral: " + literal.toString());
+            return ExpressionType.BOOL;
         } else if (literal instanceof ColorLiteral) {
-            System.out.println("ColorLiteral: " + literal.toString());
+            return ExpressionType.COLOR;
+        } else if (literal instanceof ScalarLiteral) {
+            return ExpressionType.SCALAR;
         } else if (literal instanceof PixelLiteral) {
-            System.out.println("PixelLiteral: " + literal.toString());
+            return ExpressionType.PIXEL;
         } else if (literal instanceof PercentageLiteral) {
-            System.out.println("PercentageLiteral: " + literal.toString());
+            return ExpressionType.PERCENTAGE;
+        }
+
+        literal.setError("Onbekende literal: " + literal.getClass().getSimpleName());
+        return ExpressionType.UNDEFINED;
+    }
+
+    private ExpressionType checkVariableReference(VariableReference variableReference) {
+        for (HashMap<String, ExpressionType> scope : variableTypes) {
+            if (scope.containsKey(variableReference.name)) {
+                return scope.get(variableReference.name);
+            }
+        }
+
+        variableReference.setError("Variable" + variableReference.name + " is niet gedefinieerd");
+        return ExpressionType.UNDEFINED;
+
+    }
+
+    private ExpressionType checkOperationType(Operation operation) {
+        for (ASTNode child : operation.getChildren()) {
+            if (child instanceof ColorLiteral) {
+                child.setError("Color literals zijn niet toegestaan in operaties");
+                return ExpressionType.UNDEFINED;
+            } else if (child instanceof BoolLiteral) {
+                child.setError("Boolean literals zijn niet toegestaan in operaties");
+                return ExpressionType.UNDEFINED;
+            }
+        }
+
+        if (operation instanceof AddOperation) {
+            return checkAddOperation((AddOperation) operation);
+        } else if (operation instanceof SubtractOperation) {
+            return checkSubtractOperation((SubtractOperation) operation);
+        } else if (operation instanceof MultiplyOperation) {
+            return checkMultiplyOperation((MultiplyOperation) operation);
+        } else {
+            operation.setError("Onbekende operatie");
+            return ExpressionType.UNDEFINED;
         }
     }
 
-    private void checkVariableReference(VariableReference variableReference) {
-        System.out.println("VariableReference: " + width);
+    private ExpressionType  checkAddOperation(AddOperation addOperation) {
+        ExpressionType leftType = checkExpressie(addOperation.lhs);
+        ExpressionType rightType = checkExpressie(addOperation.rhs);
 
+        if (leftType == rightType) {
+            return leftType;
+        } else {
+            addOperation.setError("Plus operatie kan alleen worden gebruikt met expressies van hetzelfde type");
+            return ExpressionType.UNDEFINED;
+        }
     }
 
-    private void checkAddOperation(AddOperation addOperation) {
-        System.out.println("AddOperation: " + addOperation.lhs.toString() + " + " + addOperation.rhs.toString());
-        if (addOperation.lhs instanceof VariableReference) {
-            checkVariableReference((VariableReference) addOperation.lhs);
+    private ExpressionType checkSubtractOperation(SubtractOperation subtractOperation) {
+        ExpressionType leftType = checkExpressie(subtractOperation.lhs);
+        ExpressionType rightType = checkExpressie(subtractOperation.rhs);
+
+        if (leftType == rightType) {
+            return leftType;
+        } else {
+            subtractOperation.setError("Min operatie kan alleen worden gebruikt met expressies van hetzelfde type");
+            return ExpressionType.UNDEFINED;
         }
-        if (addOperation.rhs instanceof VariableReference) {
-            checkVariableReference((VariableReference) addOperation.rhs);
-        }
-        checkExpressie(addOperation.lhs);
-        checkExpressie(addOperation.rhs);
     }
 
-    private void checkMultiplyOperation(MultiplyOperation multiplyOperation) {
-        System.out.println("MultiplyOperation: " + multiplyOperation.lhs.toString() + " * " + multiplyOperation.rhs.toString());
-        checkExpressie(multiplyOperation.lhs);
-        checkExpressie(multiplyOperation.rhs);
+    private ExpressionType checkMultiplyOperation(MultiplyOperation multiplyOperation) {
+        ExpressionType leftType = checkExpressie(multiplyOperation.lhs);
+        ExpressionType rightType = checkExpressie(multiplyOperation.rhs);
+
+        if (leftType != ExpressionType.SCALAR && rightType != ExpressionType.SCALAR) {
+            multiplyOperation.setError(
+                    "Keer operatie kan alleen worden gebruikt met een expressie van het type scalar en een expressie van een ander type");
+            return ExpressionType.UNDEFINED;
+        }
+
+        if (leftType == ExpressionType.SCALAR) {
+            return rightType;
+        } else {
+            return leftType;
+        }
     }
 
     private void checkIfClause(IfClause ifClause) {
-        System.out.println("IfClause: [" + ifClause.conditionalExpression.toString() + "] {" + ifClause.body.toString() + "}");
-        checkConditionalExpression(ifClause.conditionalExpression);
-        for (ASTNode node : ifClause.body) {
-            checkRegelInhoud(node);
-        }
-        if (ifClause.elseClause != null) {
-            checkElseClause(ifClause.elseClause);
-        }
-    }
+        variableTypes.addFirst(new HashMap<>());
 
-    private void checkConditionalExpression(Expression conditionalExpression) {
-        System.out.println("ConditionalExpression: " + conditionalExpression.toString());
-        checkVariableReference((VariableReference) conditionalExpression);
-    }
+        if (ifClause.conditionalExpression instanceof VariableReference) {
+            if (checkVariableReference((VariableReference) ifClause.conditionalExpression) != ExpressionType.BOOL) {
+                ifClause.conditionalExpression.setError("If clause kan alleen worden gebruikt met een boolean expressie");
+            }
+        }
 
+        for (ASTNode child : ifClause.body) {
+            if (child instanceof VariableAssignment) {
+                checkVariabeleToewijzing((VariableAssignment) child);
+            } else if (child instanceof Declaration) {
+                checkDeclaratie((Declaration) child);
+            } else if (child instanceof IfClause) {
+                checkIfClause((IfClause) child);
+            } else if (child instanceof ElseClause) {
+                checkElseClause((ElseClause) child);
+            } else {
+                child.setError(
+                        "If clause kan alleen worden gebruikt met declaraties, variabele toewijzingen, if-clauses en else-clauses");
+            }
+        }
+        variableTypes.removeFirst();
+    }
 
     private void checkElseClause(ElseClause elseClause) {
-        System.out.println("ElseClause: " + elseClause.toString());
-        checkRegelInhoud(elseClause.body.get(0));
+        variableTypes.addFirst(new HashMap<>());
+
+        for (ASTNode child : elseClause.getChildren()) {
+            if (child instanceof VariableAssignment) {
+                checkVariabeleToewijzing((VariableAssignment) child);
+            } else if (child instanceof Declaration) {
+                checkDeclaratie((Declaration) child);
+            } else if (child instanceof IfClause) {
+                checkIfClause((IfClause) child);
+            } else {
+                child.setError(
+                        "Else clause kan alleen worden gebruikt met declaraties, variabele toewijzingen en if-clauses");
+            }
+        }
+        variableTypes.removeFirst();
     }
 
     private void checkVariabeleToewijzing(VariableAssignment variableAssignment) {
-        System.out.println("VariableAssignment: " + variableAssignment.name.toString() + " = " + variableAssignment.expression.toString());
-        if (variableAssignment.expression instanceof VariableReference) {
-            checkVariableReference((VariableReference) variableAssignment.expression);
-        }
-        checkExpressie(variableAssignment.expression);
+        variableTypes.getFirst().put(variableAssignment.name.name, checkExpressie(variableAssignment.expression));
 
     }
 
