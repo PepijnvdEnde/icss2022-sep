@@ -60,18 +60,18 @@ public class Checker {
                         declaration.setError("Alleen color expressies zijn toegestaan voor background-color");
                     }
                     break;
-                case "width":
-                    if (expressionType != ExpressionType.PIXEL && expressionType != ExpressionType.PERCENTAGE) {
-                        declaration.setError("Alleen pixel en percentage expressies zijn toegestaan voor width");
-                    }
-                    break;
                 case "color":
                     if (expressionType != ExpressionType.COLOR) {
                         declaration.setError("Alleen color expressies zijn toegestaan voor color");
                     }
                     break;
+                case "width":
+                    if (expressionType != ExpressionType.PIXEL && expressionType != ExpressionType.PERCENTAGE) {
+                        declaration.setError("Alleen pixel en percentage expressies zijn toegestaan voor width");
+                    }
+                    break;
                 case "height":
-                    if (expressionType != ExpressionType.PIXEL) {
+                    if (expressionType != ExpressionType.PIXEL && expressionType != ExpressionType.PERCENTAGE) {
                         declaration.setError("Alleen pixel expressies zijn toegestaan voor height");
                     }
                     break;
@@ -83,7 +83,7 @@ public class Checker {
 
     private ExpressionType checkExpressie(Expression expression) {
         if (expression instanceof VariableReference) {
-            return checkVariableReference((VariableReference) expression);
+            return checkVariabeleReferentie((VariableReference) expression);
         } else if (expression instanceof Operation) {
             return checkOperationType((Operation) expression);
         } else if (expression instanceof Literal) {
@@ -110,7 +110,7 @@ public class Checker {
         return ExpressionType.UNDEFINED;
     }
 
-    private ExpressionType checkVariableReference(VariableReference variableReference) {
+    private ExpressionType checkVariabeleReferentie(VariableReference variableReference) {
         for (HashMap<String, ExpressionType> scope : variableTypes) {
             if (scope.containsKey(variableReference.name)) {
                 return scope.get(variableReference.name);
@@ -145,7 +145,7 @@ public class Checker {
         }
     }
 
-    private ExpressionType  checkAddOperation(AddOperation addOperation) {
+    private ExpressionType checkAddOperation(AddOperation addOperation) {
         ExpressionType leftType = checkExpressie(addOperation.lhs);
         ExpressionType rightType = checkExpressie(addOperation.rhs);
 
@@ -174,8 +174,7 @@ public class Checker {
         ExpressionType rightType = checkExpressie(multiplyOperation.rhs);
 
         if (leftType != ExpressionType.SCALAR && rightType != ExpressionType.SCALAR) {
-            multiplyOperation.setError(
-                    "Keer operatie kan alleen worden gebruikt met een expressie van het type scalar en een expressie van een ander type");
+            multiplyOperation.setError("Keer operatie kan alleen worden gebruikt met een expressie van het type scalar en een expressie van een ander type");
             return ExpressionType.UNDEFINED;
         }
 
@@ -190,7 +189,7 @@ public class Checker {
         variableTypes.addFirst(new HashMap<>());
 
         if (ifClause.conditionalExpression instanceof VariableReference) {
-            if (checkVariableReference((VariableReference) ifClause.conditionalExpression) != ExpressionType.BOOL) {
+            if (checkVariabeleReferentie((VariableReference) ifClause.conditionalExpression) != ExpressionType.BOOL) {
                 ifClause.conditionalExpression.setError("If clause kan alleen worden gebruikt met een boolean expressie");
             }
         }
@@ -205,8 +204,7 @@ public class Checker {
             } else if (child instanceof ElseClause) {
                 checkElseClause((ElseClause) child);
             } else {
-                child.setError(
-                        "If clause kan alleen worden gebruikt met declaraties, variabele toewijzingen, if-clauses en else-clauses");
+                child.setError("If clause kan alleen worden gebruikt met declaraties, variabele toewijzingen, if-clauses en else-clauses");
             }
         }
         variableTypes.removeFirst();
@@ -223,8 +221,7 @@ public class Checker {
             } else if (child instanceof IfClause) {
                 checkIfClause((IfClause) child);
             } else {
-                child.setError(
-                        "Else clause kan alleen worden gebruikt met declaraties, variabele toewijzingen en if-clauses");
+                child.setError("Else clause kan alleen worden gebruikt met declaraties, variabele toewijzingen en if-clauses");
             }
         }
         variableTypes.removeFirst();

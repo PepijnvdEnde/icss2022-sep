@@ -14,22 +14,19 @@ import nl.han.ica.icss.ast.selectors.ClassSelector;
 import nl.han.ica.icss.ast.selectors.IdSelector;
 import nl.han.ica.icss.ast.selectors.TagSelector;
 
-/**
- * This class extracts the ICSS Abstract Syntax Tree from the Antlr Parse tree.
- */
+
 public class ASTListener extends ICSSBaseListener {
-	
-	//Accumulator attributes:
-	private AST ast;
 
-	//Use this to keep track of the parent nodes when recursively traversing the ast
-	private IHANStack<ASTNode> currentContainer;
+    private AST ast;
 
-	public ASTListener() {
-		ast = new AST();
-		currentContainer = new HANStack<>();
+    private IHANStack<ASTNode> currentContainer;
+
+    public ASTListener() {
+        ast = new AST();
+        currentContainer = new HANStack<>();
         currentContainer.push(ast.root);
-	}
+    }
+
     public AST getAST() {
         return ast;
     }
@@ -54,7 +51,7 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitTagSelector(ICSSParser.TagSelectorContext ctx) {
-        Selector selector =  (Selector) currentContainer.pop();
+        Selector selector = (Selector) currentContainer.pop();
         currentContainer.peek().addChild(selector);
     }
 
@@ -66,7 +63,7 @@ public class ASTListener extends ICSSBaseListener {
 
     @Override
     public void exitClassSelector(ICSSParser.ClassSelectorContext ctx) {
-        Selector selector =  (Selector) currentContainer.pop();
+        Selector selector = (Selector) currentContainer.pop();
         currentContainer.peek().addChild(selector);
     }
 
