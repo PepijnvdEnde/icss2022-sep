@@ -191,11 +191,11 @@ public class ASTListener extends ICSSBaseListener {
     public void enterPlusMinExpressie(ICSSParser.PlusMinExpressieContext ctx) {
         if (ctx.getChild(1).getText().equals("+")) {
             AddOperation addOperation = new AddOperation();
-            currentContainer.push(new AddOperation());
+            currentContainer.push(addOperation);
         }
         if (ctx.getChild(1).getText().equals("-")) {
             SubtractOperation subtractOperation = new SubtractOperation();
-            currentContainer.push(new SubtractOperation());
+            currentContainer.push(subtractOperation);
         }
     }
 
@@ -208,7 +208,7 @@ public class ASTListener extends ICSSBaseListener {
     @Override
     public void enterMulExpressie(ICSSParser.MulExpressieContext ctx) {
         MultiplyOperation multiplyOperation = new MultiplyOperation();
-        currentContainer.push(new MultiplyOperation());
+        currentContainer.push(multiplyOperation);
     }
 
     @Override

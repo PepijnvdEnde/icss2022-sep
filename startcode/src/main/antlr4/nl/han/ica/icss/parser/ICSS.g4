@@ -53,7 +53,7 @@ declaratie: eigenschapNaam COLON expressie SEMICOLON;
 expressie: literal                         #literalExpressie
         | expressie MUL expressie          #mulExpressie
         | expressie (PLUS | MIN) expressie #plusMinExpressie;
-ifClause: IF BOX_BRACKET_OPEN variabeleReferentie  BOX_BRACKET_CLOSE OPEN_BRACE regelInhoud CLOSE_BRACE elseClause?;
+ifClause: IF BOX_BRACKET_OPEN expressie  BOX_BRACKET_CLOSE OPEN_BRACE regelInhoud CLOSE_BRACE elseClause?;
 elseClause: ELSE OPEN_BRACE regelInhoud CLOSE_BRACE;
 literal: (TRUE | FALSE)         #boolLiteral
         | COLOR                 #kleurLiteral

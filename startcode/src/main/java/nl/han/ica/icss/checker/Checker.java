@@ -190,8 +190,12 @@ public class Checker {
 
         if (ifClause.conditionalExpression instanceof VariableReference) {
             if (checkVariabeleReferentie((VariableReference) ifClause.conditionalExpression) != ExpressionType.BOOL) {
-                ifClause.conditionalExpression.setError("If clause kan alleen worden gebruikt met een boolean expressie");
+                ifClause.conditionalExpression.setError("If clause kan alleen worden gebruikt met een boolean expressie of een variabele referentie naar een boolean expressie");
             }
+        } else if (ifClause.conditionalExpression instanceof BoolLiteral) {
+            checkLiteral((BoolLiteral) ifClause.conditionalExpression);
+        } else {
+            ifClause.conditionalExpression.setError("If clause kan alleen worden gebruikt met een boolean expressie of een variabele referentie naar een boolean expressie");
         }
 
         for (ASTNode child : ifClause.body) {
