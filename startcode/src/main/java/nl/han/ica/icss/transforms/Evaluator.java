@@ -27,15 +27,17 @@ public class Evaluator implements Transform {
 
     private void applyStylesheet(Stylesheet stylesheet) {
         variableValues.addFirst(new HashMap<>());
+        // Een variable toewijzing hoeft niet in de tree te staan, dus deze wordt verwijderd.
         List<ASTNode> nodesToRemove = new ArrayList<>();
-            for (ASTNode node : stylesheet.getChildren()) {
-                if (node instanceof Stylerule) {
-                    applyStijlRegel(((Stylerule) node).body);
-                } else if (node instanceof VariableAssignment) {
-                    applyVariabeleToewijzing((VariableAssignment) node);
-                    nodesToRemove.add(node);
-                }
+
+        for (ASTNode node : stylesheet.getChildren()) {
+            if (node instanceof Stylerule) {
+                applyStijlRegel(((Stylerule) node).body);
+            } else if (node instanceof VariableAssignment) {
+                applyVariabeleToewijzing((VariableAssignment) node);
+                nodesToRemove.add(node);
             }
+        }
 
         for (ASTNode child : nodesToRemove) {
             stylesheet.removeChild(child);
@@ -47,7 +49,9 @@ public class Evaluator implements Transform {
     private void applyStijlRegel(List<ASTNode> stijlRegel) {
         variableValues.addFirst(new HashMap<>());
 
+        // Een variable toewijzing of if-clause hoeft niet in de tree te staan, dus deze wordt verwijderd.
         List<ASTNode> nodesToRemove = new ArrayList<>();
+        // De body van de if-clause moet toegvoegd worden aan de tree, dus deze wordt toegevoegd.
         List<ASTNode> nodesToAdd = new ArrayList<>();
 
         for (ASTNode node : stijlRegel) {
@@ -71,20 +75,23 @@ public class Evaluator implements Transform {
     }
 
     private List<ASTNode> applyIfClause(IfClause ifClause) {
+
         boolean ifClauseIsTrue = ((BoolLiteral) Objects.requireNonNull(evaluateExpression(ifClause.conditionalExpression))).value;
 
         if (!ifClauseIsTrue) {
             if (ifClause.elseClause == null) {
                 return new ArrayList<>();
             }
+            // De body moet gecheckt worden op if-clauses, variable toewijzingen en/of declaraties.
             applyStijlRegel(ifClause.elseClause.body);
             return ifClause.elseClause.body;
         }
-
+        // De body moet gecheckt worden op if-clauses, variable toewijzingen en/of declaraties.
         applyStijlRegel(ifClause.body);
         return ifClause.body;
     }
 
+    // Zet de waarde van de variabele in de variableValues list
     private void applyVariabeleToewijzing(VariableAssignment variableAssignment) {
         Literal literal = evaluateExpression(variableAssignment.expression);
         assert variableValues.peek() != null;
@@ -95,7 +102,6 @@ public class Evaluator implements Transform {
     private void applyDeclaratie(Declaration declaration) {
         declaration.expression = evaluateExpression(declaration.expression);
     }
-
 
     private Literal evaluateExpression(Expression expression) {
         if (expression instanceof Literal) {
@@ -112,6 +118,7 @@ public class Evaluator implements Transform {
         return null;
     }
 
+    // Haalt de variable op uit de variableValues list
     private Literal evaluateVariableReference(VariableReference variableReference) {
         for (HashMap<String, Literal> variableValue : variableValues) {
             if (variableValue.containsKey(variableReference.name)) {

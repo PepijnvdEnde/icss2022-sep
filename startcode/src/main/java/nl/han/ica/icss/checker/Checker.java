@@ -22,7 +22,7 @@ public class Checker {
 
     private void checkStylesheet(Stylesheet stylesheet) {
         variableTypes.addFirst(new HashMap<>());
-        for (ASTNode node : stylesheet.getChildren()) {
+        for (ASTNode node : stylesheet.body) {
             if (node instanceof Stylerule) {
                 checkStijlRegel((Stylerule) node);
             } else if (node instanceof VariableAssignment) {
@@ -117,12 +117,13 @@ public class Checker {
             }
         }
 
-        variableReference.setError("Variable" + variableReference.name + " is niet gedefinieerd");
+        variableReference.setError("Variable: " + variableReference.name + " is niet gedefinieerd");
         return ExpressionType.UNDEFINED;
 
     }
 
     private ExpressionType checkOperationType(Operation operation) {
+
         for (ASTNode child : operation.getChildren()) {
             if (child instanceof ColorLiteral) {
                 child.setError("Color literals zijn niet toegestaan in operaties");
@@ -157,6 +158,7 @@ public class Checker {
         }
     }
 
+
     private ExpressionType checkSubtractOperation(SubtractOperation subtractOperation) {
         ExpressionType leftType = checkExpressie(subtractOperation.lhs);
         ExpressionType rightType = checkExpressie(subtractOperation.rhs);
@@ -168,6 +170,7 @@ public class Checker {
             return ExpressionType.UNDEFINED;
         }
     }
+
 
     private ExpressionType checkMultiplyOperation(MultiplyOperation multiplyOperation) {
         ExpressionType leftType = checkExpressie(multiplyOperation.lhs);
@@ -185,17 +188,19 @@ public class Checker {
         }
     }
 
+
     private void checkIfClause(IfClause ifClause) {
         variableTypes.addFirst(new HashMap<>());
 
+        // Checkt of de expressie van de if-clause een boolean is of een variabele referentie naar een boolean
         if (ifClause.conditionalExpression instanceof VariableReference) {
             if (checkVariabeleReferentie((VariableReference) ifClause.conditionalExpression) != ExpressionType.BOOL) {
                 ifClause.conditionalExpression.setError("If clause kan alleen worden gebruikt met een boolean expressie of een variabele referentie naar een boolean expressie");
             }
         } else if (ifClause.conditionalExpression instanceof BoolLiteral) {
-            checkLiteral((BoolLiteral) ifClause.conditionalExpression);
-        } else {
-            ifClause.conditionalExpression.setError("If clause kan alleen worden gebruikt met een boolean expressie of een variabele referentie naar een boolean expressie");
+            if (checkLiteral((BoolLiteral) ifClause.conditionalExpression) != ExpressionType.BOOL) {
+                ifClause.conditionalExpression.setError("If clause kan alleen worden gebruikt met een boolean expressie of een variabele referentie naar een boolean expressie");
+            }
         }
 
         for (ASTNode child : ifClause.body) {
@@ -208,16 +213,17 @@ public class Checker {
             } else if (child instanceof ElseClause) {
                 checkElseClause((ElseClause) child);
             } else {
-                child.setError("If clause kan alleen worden gebruikt met declaraties, variabele toewijzingen, if-clauses en else-clauses");
+                child.setError("If clause kan alleen declaraties, variabele toewijzingen, if-clauses en/of else-clauses bevatten");
             }
         }
         variableTypes.removeFirst();
     }
 
+
     private void checkElseClause(ElseClause elseClause) {
         variableTypes.addFirst(new HashMap<>());
 
-        for (ASTNode child : elseClause.getChildren()) {
+        for (ASTNode child : elseClause.body) {
             if (child instanceof VariableAssignment) {
                 checkVariabeleToewijzing((VariableAssignment) child);
             } else if (child instanceof Declaration) {
@@ -225,12 +231,13 @@ public class Checker {
             } else if (child instanceof IfClause) {
                 checkIfClause((IfClause) child);
             } else {
-                child.setError("Else clause kan alleen worden gebruikt met declaraties, variabele toewijzingen en if-clauses");
+                child.setError("Else clause kan alleen declaraties, variabele toewijzingen en/of if-clauses bevatten");
             }
         }
         variableTypes.removeFirst();
     }
 
+    // Checkt de variabele toewijzing en voegt de variabele toe aan de lijst van variabelen
     private void checkVariabeleToewijzing(VariableAssignment variableAssignment) {
         variableTypes.getFirst().put(variableAssignment.name.name, checkExpressie(variableAssignment.expression));
 

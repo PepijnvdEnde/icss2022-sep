@@ -31,6 +31,7 @@ public class ASTListener extends ICSSBaseListener {
         return ast;
     }
 
+    // De enter en exit methodes worden aangeroepen wanneer de parser de bijbehorende regel in de grammatica tegenkomt
     @Override
     public void enterStijlRegel(ICSSParser.StijlRegelContext ctx) {
         Stylerule stylerule = new Stylerule();
@@ -187,12 +188,16 @@ public class ASTListener extends ICSSBaseListener {
         currentContainer.peek().addChild(variableReference);
     }
 
+    // In mijn grammatica heb ik de plus en min operatie dezefde tag gegeven, hierdoor hebben de + en - operaties dezefde prioriteit
     @Override
     public void enterPlusMinExpressie(ICSSParser.PlusMinExpressieContext ctx) {
+        // Als de operator + is dan maak een AddOperation aan en push deze in de stack
         if (ctx.getChild(1).getText().equals("+")) {
             AddOperation addOperation = new AddOperation();
             currentContainer.push(addOperation);
         }
+        // Als de operator - is dan maak een SubtractOperation aan en push deze in de stack
+        else
         if (ctx.getChild(1).getText().equals("-")) {
             SubtractOperation subtractOperation = new SubtractOperation();
             currentContainer.push(subtractOperation);

@@ -34,10 +34,11 @@ public class Generator {
 
         for (ASTNode node : stijlregel.body) {
             if (node instanceof Declaration) {
+                // Dit zijn twee spaties.
                 stijlRegel.append("  ").append(generateDeclaratie((Declaration) node)).append("\n");
             }
         }
-        return stijlRegel + "}";
+        return stijlRegel.append("}").toString();
     }
 
     private String generateSelector(List<Selector> selector) {
